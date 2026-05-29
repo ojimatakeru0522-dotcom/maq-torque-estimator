@@ -25,19 +25,6 @@ import pandas as pd
 import streamlit as st
 import streamlit as st
 
-# =========================
-# パスワード認証
-# =========================
-APP_PASSWORD = "maq"   # ←好きなパスワードに変更
-
-pwd = st.text_input(
-    "パスワードを入力してください",
-    type="password"
-)
-
-if pwd != APP_PASSWORD:
-    st.warning("パスワードを入力してください")
-    st.stop()
 
 # =========================================================
 # 固定CBファイル
@@ -501,7 +488,7 @@ st.markdown(
     }
 
     .panel {
-        padding: 1.4rem;
+        padding: 0.8rem 1.2rem
         border-radius: 24px;
         background: rgba(15, 23, 42, .82);
         border: 1px solid rgba(148,163,184,.18);
@@ -522,12 +509,19 @@ st.markdown(
     }
 
     .result-card {
-        text-align: center;
-        padding: 2rem 1.5rem;
-        border-radius: 28px;
-        background: linear-gradient(145deg, rgba(0,43,90,.96), rgba(0,91,172,.82));
-        border: 1px solid rgba(0,174,239,.34);
-        box-shadow: 0 24px 80px rgba(0,91,172,.32);
+        background:
+        linear-gradient(
+            145deg,
+            #003B73,
+            #005BAC
+        );
+    
+        border: 1px solid rgba(111,195,255,.40);
+    
+        box-shadow:
+            0 0 40px rgba(0,91,172,.45),
+            0 20px 80px rgba(0,91,172,.35);
+    
         margin-top: 1rem;
     }
 
@@ -609,6 +603,35 @@ st.markdown(
         margin-top: 2.5rem;
         font-size: .86rem;
     }
+
+    /* =========================
+    入力ラベルを白・青に変更
+    ========================= */
+    
+    [data-testid="stWidgetLabel"] p {
+    color: #D6ECFF !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+}
+    
+    /* NumberInputラベル */
+    .stNumberInput label {
+    color: #D6ECFF !important;
+    font-weight: 700 !important;
+    }
+    
+    /* FileUploaderラベル */
+    .stFileUploader label {
+    color: #D6ECFF !important;
+    font-weight: 700 !important;
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    }
+
 
     @media (max-width: 760px) {
         .info-row {
