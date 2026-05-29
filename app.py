@@ -815,11 +815,9 @@ if estimate_clicked:
                         <div class="result-label">
                             Estimated Peak Elbow Varus Torque
                         </div>
-
                         <div class="result-value">
                             {torque:.2f}
                         </div>
-
                         <div class="result-unit">
                             N·m
                         </div>
