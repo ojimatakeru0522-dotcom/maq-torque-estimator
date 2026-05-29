@@ -385,32 +385,72 @@ if "APP_PASSWORD" in st.secrets:
     st.markdown(
         """
         <style>
-        .login-card {
+        .stApp {
+            background:
+                radial-gradient(circle at 50% 20%, rgba(0,91,172,.22), transparent 30%),
+                linear-gradient(135deg, #03111F 0%, #082B4C 55%, #061A2F 100%);
+        }
+
+        .block-container {
             max-width: 520px;
-            margin: 8vh auto 0 auto;
-            padding: 2rem;
-            border-radius: 24px;
+            padding-top: 14vh;
+        }
+
+        .login-card {
+            padding: 2.2rem;
+            border-radius: 28px;
             background: linear-gradient(145deg, rgba(15,23,42,.96), rgba(2,6,23,.96));
             border: 1px solid rgba(148,163,184,.25);
             box-shadow: 0 24px 70px rgba(0,0,0,.35);
+            text-align: center;
+        }
+
+        .login-card h1 {
+            color: #f8fafc;
+            font-size: 2.3rem;
+            line-height: 1.05;
+            margin: 0 0 .8rem 0;
+        }
+
+        .login-card p {
+            color: #9db5d1;
+            margin-bottom: 1.5rem;
+        }
+
+        [data-testid="stTextInput"] {
+            max-width: 360px;
+            margin: 1rem auto 0 auto;
+        }
+
+        [data-testid="stTextInput"] input {
+            border-radius: 14px;
+            height: 48px;
+            text-align: center;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
+
     st.markdown(
         """
         <div class="login-card">
-            <h1 style="margin-bottom:.2rem;">MA-Q Torque Estimator</h1>
-            <p style="color:#9db5d1;">Password required</p>
+            <h1>MA-Q Torque<br>Estimator</h1>
+            <p>Password required</p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    pwd = st.text_input("Password", type="password", label_visibility="collapsed")
+
+    pwd = st.text_input(
+        "Password",
+        type="password",
+        placeholder="Enter password",
+        label_visibility="collapsed"
+    )
+
     if pwd != st.secrets["APP_PASSWORD"]:
         st.stop()
-
 # =========================
 # Design CSS
 # =========================
