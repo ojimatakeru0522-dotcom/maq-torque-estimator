@@ -716,10 +716,10 @@ st.markdown(
     """
     <div class="hero">
         <div class="eyebrow">⚾ MA-Q SENSOR DATA ESTIMATOR</div>
-        <h1>Elbow Varus Torque<br>Prediction System</h1>
+        <h1>Elbow Varus Torque<br>Estimation System</h1>
         <p class="sub">
             ミズノのMA-Qセンサから得られる投球データを用いて、
-            肘内反ピークトルクを推定します。MA-Q試技CSV、身長、体重を入力してください。
+            肘関節内反ピークトルクを推定します。MA-Q試技CSV、身長、体重を入力してください。
         </p>
     </div>
     """,
@@ -750,19 +750,19 @@ with center:
 
     with col1:
         mass = st.number_input(
-            "Body mass [kg]",
+            "体重 [kg]",
             min_value=20.0,
             max_value=150.0,
-            value=82.2,
+            value=0.0,
             step=0.1
         )
 
     with col2:
         height = st.number_input(
-            "Body height [m]",
+            "身長 [m]",
             min_value=1.20,
             max_value=2.20,
-            value=1.773,
+            value=0.000,
             step=0.001,
             format="%.3f"
         )
