@@ -731,54 +731,51 @@ if not os.path.exists(CB_FIXED_PATH):
         f"固定CB.csvが見つかりません: `{CB_FIXED_PATH}`\n\n"
         "アプリフォルダ内に `data` フォルダを作成し、その中に `CB.csv` を置いてください。"
     )
+    
+_, center, _ = st.columns([1, 3, 1])
 
-left, right = st.columns([1.05, 0.95], gap="large")
+with center_col:
 
-with left:
-    st.markdown('<div class="panel"><div class="panel-title">1. Input data</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="panel"><div class="panel-title">Input data</div>',
+        unsafe_allow_html=True
+    )
 
-    maq_csv = st.file_uploader("MA-Q 試技CSV", type=["csv"], help="MA-Qから出力された試技CSVをアップロードしてください。")
+    maq_csv = st.file_uploader(
+        "MA-Q 試技CSV",
+        type=["csv"]
+    )
 
     col1, col2 = st.columns(2)
+
     with col1:
-        mass = st.number_input("Body mass [kg]", min_value=20.0, max_value=150.0, value=82.2, step=0.1)
+        mass = st.number_input(
+            "Body mass [kg]",
+            min_value=20.0,
+            max_value=150.0,
+            value=82.2,
+            step=0.1
+        )
+
     with col2:
-        height = st.number_input("Body height [m]", min_value=1.20, max_value=2.20, value=1.773, step=0.001, format="%.3f")
+        height = st.number_input(
+            "Body height [m]",
+            min_value=1.20,
+            max_value=2.20,
+            value=1.773,
+            step=0.001,
+            format="%.3f"
+        )
 
-    with st.expander("Advanced settings"):
-        abc = st.number_input("Part 1 frames", min_value=1, max_value=81, value=52, step=1)
-        fps = st.number_input("Sampling frequency [Hz]", min_value=1.0, max_value=2000.0, value=500.0, step=1.0)
 
-    estimate_clicked = st.button("Estimate torque", type="primary")
+    estimate_clicked = st.button(
+        "Estimate torque",
+        type="primary"
+    )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-with right:
-    st.markdown(
-        """
-        <div class="panel">
-            <div class="panel-title">2. Model information</div>
-            <div class="small-muted">
-                This tool estimates peak elbow varus torque from MA-Q acceleration and gyroscope data.
-                The fixed CB.csv is used internally for global coordinate definition.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
-    st.markdown(
-        f"""
-        <div class="panel" style="margin-top:1rem;">
-            <div class="panel-title">Fixed calibration file</div>
-            <div class="small-muted">
-                Status: {"Available" if os.path.exists(CB_FIXED_PATH) else "Not found"}<br>
-                Path: <code>{CB_FIXED_PATH}</code>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
 # =========================
 # Result area
@@ -797,8 +794,8 @@ if estimate_clicked:
                     mass=mass,
                     height=height,
                     cb_csv_path=CB_FIXED_PATH,
-                    abc=int(abc),
-                    fps=float(fps),
+                    abc = 52,
+                    fps= 500.0,
                 )
 
             torque = result["estimated_peak_torque"]
