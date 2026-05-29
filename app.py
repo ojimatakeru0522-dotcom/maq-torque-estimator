@@ -753,7 +753,7 @@ with center:
             "体重 [kg]",
             min_value=20.0,
             max_value=150.0,
-            value=0.0,
+            value=None,
             step=0.1
         )
 
@@ -762,7 +762,7 @@ with center:
             "身長 [m]",
             min_value=1.20,
             max_value=2.20,
-            value=0.000,
+            value=None,
             step=0.001,
             format="%.3f"
         )
@@ -780,16 +780,24 @@ with center:
 # =========================
 # Result area
 # =========================
-# =========================
-# Result area
-# =========================
+
 if estimate_clicked:
 
     if maq_csv is None:
         st.error("MA-Q 試技CSVをアップロードしてください。")
+        st.stop()
 
-    elif not os.path.exists(CB_FIXED_PATH):
+    if mass is None or height is None:
+        st.warning("身長と体重を入力してください")
+        st.stop()
+
+    if not os.path.exists(CB_FIXED_PATH):
         st.error(f"固定CB.csvが見つかりません: {CB_FIXED_PATH}")
+        st.stop()
+
+    try:
+        with st.spinner("Analyzing MA-Q data..."):
+            ...
 
     else:
         try:
