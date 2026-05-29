@@ -407,24 +407,28 @@ if "APP_PASSWORD" in st.secrets:
 
         .login-card h1 {
             color: #f8fafc;
-            font-size: 2.3rem;
-            line-height: 1.05;
-            margin: 0 0 .8rem 0;
+            font-size: 3.5rem;   /* 2.3 → 3.5 */
+            font-weight: 800;
+            line-height: 1.0;
+            margin-bottom: 1rem;
         }
 
         .login-card p {
             color: #9db5d1;
-            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.8rem;
         }
 
         [data-testid="stTextInput"] {
-            max-width: 360px;
-            margin: 1rem auto 0 auto;
+            max-width: 500px;
+            margin: 1.5rem auto 0 auto;
         }
 
         [data-testid="stTextInput"] input {
-            border-radius: 14px;
-            height: 48px;
+            height: 65px;
+            font-size: 1.5rem;
+            border-radius: 16px;
             text-align: center;
         }
         </style>
