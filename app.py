@@ -488,7 +488,7 @@ st.markdown(
     }
 
     .panel {
-        padding: 0.8rem 1.2rem
+        padding: 0.8rem 1.2rem;
         border-radius: 24px;
         background: rgba(15, 23, 42, .82);
         border: 1px solid rgba(148,163,184,.18);
@@ -714,78 +714,78 @@ with right:
         unsafe_allow_html=True
     )
 
-if estimate_clicked:
-    if maq_csv is None:
-        st.error("MA-Q 試技CSVをアップロードしてください。")
-    elif not os.path.exists(CB_FIXED_PATH):
-        st.error(f"固定CB.csvが見つかりません: {CB_FIXED_PATH}")
-    else:
-        try:
-            with st.spinner("Analyzing MA-Q data..."):
-                result = estimate_torque_from_uploaded_maq_csv(
-                    maq_csv_file=maq_csv,
-                    mass=mass,
-                    height=height,
-                    cb_csv_path=CB_FIXED_PATH,
-                    abc=int(abc),
-                    fps=float(fps),
+    if estimate_clicked:
+        if maq_csv is None:
+            st.error("MA-Q 試技CSVをアップロードしてください。")
+        elif not os.path.exists(CB_FIXED_PATH):
+            st.error(f"固定CB.csvが見つかりません: {CB_FIXED_PATH}")
+        else:
+            try:
+                with st.spinner("Analyzing MA-Q data..."):
+                    result = estimate_torque_from_uploaded_maq_csv(
+                        maq_csv_file=maq_csv,
+                        mass=mass,
+                        height=height,
+                        cb_csv_path=CB_FIXED_PATH,
+                        abc=int(abc),
+                        fps=float(fps),
+                    )
+    
+                torque = result["estimated_peak_torque"]
+    
+                st.markdown(
+                    f"""
+                    <div class="result-card">
+                        <div class="result-label">Estimated peak elbow varus torque</div>
+                        <div class="result-value">{torque:.2f}</div>
+                        <div class="result-unit">N･m</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
-
-            torque = result["estimated_peak_torque"]
-
-            st.markdown(
-                f"""
-                <div class="result-card">
-                    <div class="result-label">Estimated peak elbow varus torque</div>
-                    <div class="result-value">{torque:.2f}</div>
-                    <div class="result-unit">N･m</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            st.markdown(
-                f"""
-                <div class="info-row">
-                    <div class="info-box">
-                        <div class="info-k">Release frame</div>
-                        <div class="info-v">{result["release_idx"]}</div>
+    
+                st.markdown(
+                    f"""
+                    <div class="info-row">
+                        <div class="info-box">
+                            <div class="info-k">Release frame</div>
+                            <div class="info-v">{result["release_idx"]}</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-k">Used frames</div>
+                            <div class="info-v">{result["used_frames"]}</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-k">Frames after release</div>
+                            <div class="info-v">{result["frames_after_release"]}</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-k">Mass / Height</div>
+                            <div class="info-v">{mass:.1f} kg / {height:.3f} m</div>
+                        </div>
                     </div>
-                    <div class="info-box">
-                        <div class="info-k">Used frames</div>
-                        <div class="info-v">{result["used_frames"]}</div>
-                    </div>
-                    <div class="info-box">
-                        <div class="info-k">Frames after release</div>
-                        <div class="info-v">{result["frames_after_release"]}</div>
-                    </div>
-                    <div class="info-box">
-                        <div class="info-k">Mass / Height</div>
-                        <div class="info-v">{mass:.1f} kg / {height:.3f} m</div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            with st.expander("Processing details"):
-                st.write({
-                    "release_idx": result["release_idx"],
-                    "release_val": result["release_val"],
-                    "frames_after_release": result["frames_after_release"],
-                    "used_frames": result["used_frames"],
-                    "flip_points": result["flip_points"],
-                })
-
-            with st.expander("Extracted features"):
-                feat_df = pd.DataFrame(
-                    [{"feature": k, "value": v} for k, v in result["features"].items()]
+                    """,
+                    unsafe_allow_html=True
                 )
-                st.dataframe(feat_df, use_container_width=True)
-
-        except Exception as e:
-            st.error("推定中にエラーが発生しました。")
-            st.exception(e)
+    
+                with st.expander("Processing details"):
+                    st.write({
+                        "release_idx": result["release_idx"],
+                        "release_val": result["release_val"],
+                        "frames_after_release": result["frames_after_release"],
+                        "used_frames": result["used_frames"],
+                        "flip_points": result["flip_points"],
+                    })
+    
+                with st.expander("Extracted features"):
+                    feat_df = pd.DataFrame(
+                        [{"feature": k, "value": v} for k, v in result["features"].items()]
+                    )
+                    st.dataframe(feat_df, use_container_width=True)
+    
+            except Exception as e:
+                st.error("推定中にエラーが発生しました。")
+                st.exception(e)
 
 st.markdown(
     """
