@@ -431,6 +431,10 @@ if "APP_PASSWORD" in st.secrets:
             border-radius: 16px;
             text-align: center;
         }
+
+        [data-testid="stTextInput"] input::placeholder {
+            font-size: 1.2rem;
+        }
         </style>
         """,
         unsafe_allow_html=True
