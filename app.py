@@ -420,25 +420,34 @@ if "APP_PASSWORD" in st.secrets:
             margin-bottom: 1.8rem;
         }
 
-        [data-testid="stTextInput"] {
+        .stTextInput {
             max-width: 500px;
-            margin: 1.5rem auto 0 auto;
+            margin: 1.8rem auto 0 auto;
         }
-
-        [data-testid="stTextInput"] input {
-            height: 65px;
-            font-size: 1.5rem;
-            border-radius: 16px;
+        
+        .stTextInput > div {
+            height: 72px;
+        }
+        
+        .stTextInput input {
+            height: 72px;
+            min-height: 72px;
+            padding: 0 3.2rem 0 1.2rem;
+            font-size: 1.6rem;
+            font-weight: 600;
             text-align: center;
+            border-radius: 16px;
+            line-height: 72px;
         }
-
-        [data-testid="stTextInput"] input::placeholder {
-            font-size: 1.2rem;
+        
+        .stTextInput input::placeholder {
+            font-size: 1.4rem;
+            line-height: 72px;
         }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
     st.markdown(
         """
