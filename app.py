@@ -592,11 +592,12 @@ st.markdown(
     }
 
     .result-label {
-        color: #dbeafe;
+        color: #EAF4FF;
         text-transform: uppercase;
-        letter-spacing: .08em;
-        font-size: .82rem;
-        margin-bottom: .5rem;
+        letter-spacing: .06em;
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
     }
 
     .result-value {
