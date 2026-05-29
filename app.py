@@ -788,7 +788,7 @@ if estimate_clicked:
         st.stop()
 
     if mass is None or height is None:
-        st.warning("身長と体重を入力してください")
+        st.warning("身長と体重を入力してください。")
         st.stop()
 
     if not os.path.exists(CB_FIXED_PATH):
@@ -797,43 +797,37 @@ if estimate_clicked:
 
     try:
         with st.spinner("Analyzing MA-Q data..."):
-            ...
+            result = estimate_torque_from_uploaded_maq_csv(
+                maq_csv_file=maq_csv,
+                mass=mass,
+                height=height,
+                cb_csv_path=CB_FIXED_PATH,
+                abc=52,
+                fps=500.0,
+            )
 
-    else:
-        try:
-            with st.spinner("Analyzing MA-Q data..."):
+        torque = result["estimated_peak_torque"]
 
-                result = estimate_torque_from_uploaded_maq_csv(
-                    maq_csv_file=maq_csv,
-                    mass=mass,
-                    height=height,
-                    cb_csv_path=CB_FIXED_PATH,
-                    abc=52,
-                    fps=500.0,
-                )
+        _, center, _ = st.columns([1, 4, 1])
 
-            torque = result["estimated_peak_torque"]
-
-            _, center, _ = st.columns([1, 4, 1])
-
-            with center:
-                st.markdown(
-                    f"""
-                    <div class="result-card">
-                        <div class="result-label">
-                            Estimated Peak Elbow Varus Torque
-                        </div>
-                        <div class="result-value">
-                            {torque:.2f}
-                        </div>
-                        <div class="result-unit">
-                            N·m
-                        </div>
+        with center:
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">
+                        Estimated Peak Elbow Varus Torque
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                    <div class="result-value">
+                        {torque:.2f}
+                    </div>
+                    <div class="result-unit">
+                        N·m
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-        except Exception as e:
-            st.error("推定中にエラーが発生しました。")
-            st.exception(e)
+    except Exception as e:
+        st.error("推定中にエラーが発生しました。")
+        st.exception(e)
