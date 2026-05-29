@@ -24,6 +24,21 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+import streamlit as st
+
+# =========================
+# パスワード認証
+# =========================
+APP_PASSWORD = "maq"   # ←好きなパスワードに変更
+
+pwd = st.text_input(
+    "パスワードを入力してください",
+    type="password"
+)
+
+if pwd != APP_PASSWORD:
+    st.warning("パスワードを入力してください")
+    st.stop()
 
 # =========================================================
 # 固定CBファイル
