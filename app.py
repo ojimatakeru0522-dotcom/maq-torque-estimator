@@ -23,7 +23,6 @@ from typing import Iterable, Optional, Tuple, Dict, List
 import numpy as np
 import pandas as pd
 import streamlit as st
-
 import streamlit as st
 
 # =========================
@@ -379,67 +378,383 @@ def estimate_torque_from_uploaded_maq_csv(
         }
 
 
+
 # =========================================================
 # 3. Streamlit UI
 # =========================================================
 st.set_page_config(
     page_title="MA-Q Torque Estimator",
     page_icon="⚾",
-    layout="centered"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-st.title("MA-Q 肘内反ピークトルク推定")
-st.write("MA-Qの試技CSV、身長、体重を入力すると推定ピークトルクを算出します。")
+# =========================
+# Optional password auth
+# =========================
+# Streamlit Cloud の Secrets に APP_PASSWORD を設定すると有効化されます。
+# 設定しない場合はパスワードなしで動きます。
+if "APP_PASSWORD" in st.secrets:
+    st.markdown(
+        """
+        <style>
+        .login-card {
+            max-width: 520px;
+            margin: 8vh auto 0 auto;
+            padding: 2rem;
+            border-radius: 24px;
+            background: linear-gradient(145deg, rgba(15,23,42,.96), rgba(2,6,23,.96));
+            border: 1px solid rgba(148,163,184,.25);
+            box-shadow: 0 24px 70px rgba(0,0,0,.35);
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown(
+        """
+        <div class="login-card">
+            <h1 style="margin-bottom:.2rem;">MA-Q Torque Estimator</h1>
+            <p style="color:#9db5d1;">Password required</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    pwd = st.text_input("Password", type="password", label_visibility="collapsed")
+    if pwd != st.secrets["APP_PASSWORD"]:
+        st.stop()
+
+# =========================
+# Design CSS
+# =========================
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background:
+            radial-gradient(circle at 15% 10%, rgba(0,174,239,0.16), transparent 28%),
+            radial-gradient(circle at 85% 15%, rgba(0,91,172,0.18), transparent 30%),
+            linear-gradient(135deg, #03111F 0%, #082B4C 48%, #061A2F 100%);
+        color: #e5e7eb;
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(2, 6, 23, 0);
+    }
+
+    .block-container {
+        padding-top: 2.5rem;
+        max-width: 1120px;
+    }
+
+    .hero {
+        padding: 2.3rem 2.4rem;
+        border-radius: 30px;
+        background: linear-gradient(135deg, rgba(3,17,31,.97), rgba(0,91,172,.34));
+        border: 1px solid rgba(148,163,184,.22);
+        box-shadow: 0 24px 80px rgba(0,0,0,.35);
+        margin-bottom: 1.25rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero:after {
+        content: "";
+        position: absolute;
+        width: 340px;
+        height: 340px;
+        right: -120px;
+        top: -150px;
+        background: radial-gradient(circle, rgba(0,91,172,.35), transparent 68%);
+        border-radius: 50%;
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: .45rem;
+        padding: .35rem .75rem;
+        border-radius: 999px;
+        background: rgba(0,91,172,.16);
+        color: #dbeafe;
+        border: 1px solid rgba(0,91,172,.42);
+        font-size: .82rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        margin-bottom: .85rem;
+    }
+
+    .hero h1 {
+        font-size: clamp(2.1rem, 5vw, 4.4rem);
+        line-height: .95;
+        margin: 0;
+        letter-spacing: -0.055em;
+        color: #f8fafc;
+    }
+
+    .hero .sub {
+        margin-top: 1rem;
+        max-width: 760px;
+        color: #cbd5e1;
+        font-size: 1.08rem;
+        line-height: 1.75;
+    }
+
+    .panel {
+        padding: 1.4rem;
+        border-radius: 24px;
+        background: rgba(15, 23, 42, .82);
+        border: 1px solid rgba(148,163,184,.18);
+        box-shadow: 0 14px 45px rgba(0,0,0,.22);
+    }
+
+    .panel-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: .65rem;
+    }
+
+    .small-muted {
+        color: #9db5d1;
+        font-size: .92rem;
+        line-height: 1.6;
+    }
+
+    .result-card {
+        text-align: center;
+        padding: 2rem 1.5rem;
+        border-radius: 28px;
+        background: linear-gradient(145deg, rgba(0,43,90,.96), rgba(0,91,172,.82));
+        border: 1px solid rgba(0,174,239,.34);
+        box-shadow: 0 24px 80px rgba(0,91,172,.32);
+        margin-top: 1rem;
+    }
+
+    .result-label {
+        color: #dbeafe;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-size: .82rem;
+        margin-bottom: .5rem;
+    }
+
+    .result-value {
+        font-size: clamp(2.5rem, 7vw, 5rem);
+        font-weight: 850;
+        letter-spacing: -0.06em;
+        color: #ffffff;
+        line-height: 1;
+    }
+
+    .result-unit {
+        color: #dbeafe;
+        font-size: 1.2rem;
+        margin-top: .3rem;
+    }
+
+    .info-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: .8rem;
+        margin-top: 1rem;
+    }
+
+    .info-box {
+        padding: .85rem;
+        border-radius: 18px;
+        background: rgba(2,6,23,.32);
+        border: 1px solid rgba(148,163,184,.14);
+    }
+
+    .info-k {
+        color: #9db5d1;
+        font-size: .78rem;
+    }
+
+    .info-v {
+        color: #f8fafc;
+        font-weight: 700;
+        font-size: 1.05rem;
+        margin-top: .15rem;
+    }
+
+    div[data-testid="stFileUploader"] {
+        border: 1px dashed rgba(0,91,172,.50);
+        border-radius: 18px;
+        padding: .35rem;
+        background: rgba(2,6,23,.24);
+    }
+
+    .stButton > button {
+        width: 100%;
+        border-radius: 18px;
+        padding: .85rem 1.1rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        background: linear-gradient(90deg, #005BAC, #0078D7);
+        border: none;
+        color: white;
+        box-shadow: 0 12px 30px rgba(0,91,172,.32);
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 40px rgba(0,91,172,.28);
+    }
+
+    .footer {
+        color: #64748b;
+        text-align: center;
+        margin-top: 2.5rem;
+        font-size: .86rem;
+    }
+
+    @media (max-width: 760px) {
+        .info-row {
+            grid-template-columns: 1fr 1fr;
+        }
+        .hero {
+            padding: 1.5rem;
+        }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    <div class="hero">
+        <div class="eyebrow">⚾ MA-Q SENSOR DATA ESTIMATOR</div>
+        <h1>Elbow Varus Torque<br>Prediction System</h1>
+        <p class="sub">
+            ミズノのMA-Qセンサから得られる投球データを用いて、
+            肘内反ピークトルクを推定します。MA-Q試技CSV、身長、体重を入力してください。
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 if not os.path.exists(CB_FIXED_PATH):
     st.error(
         f"固定CB.csvが見つかりません: `{CB_FIXED_PATH}`\n\n"
         "アプリフォルダ内に `data` フォルダを作成し、その中に `CB.csv` を置いてください。"
     )
-else:
-    st.info(f"固定CB.csvを使用中: `{CB_FIXED_PATH}`")
 
-maq_csv = st.file_uploader("MA-Q 試技CSVをアップロード", type=["csv"])
+left, right = st.columns([1.05, 0.95], gap="large")
 
-col1, col2 = st.columns(2)
-with col1:
-    mass = st.number_input("体重 mass [kg]", min_value=20.0, max_value=150.0, value=82.2, step=0.1)
-with col2:
-    height = st.number_input("身長 height [m]", min_value=1.20, max_value=2.20, value=1.773, step=0.001, format="%.3f")
+with left:
+    st.markdown('<div class="panel"><div class="panel-title">1. Input data</div>', unsafe_allow_html=True)
 
-with st.expander("詳細設定"):
-    abc = st.number_input("分割フレーム数 part1", min_value=1, max_value=81, value=52, step=1)
-    fps = st.number_input("サンプリング周波数 [Hz]", min_value=1.0, max_value=2000.0, value=500.0, step=1.0)
+    maq_csv = st.file_uploader("MA-Q 試技CSV", type=["csv"], help="MA-Qから出力された試技CSVをアップロードしてください。")
 
-if st.button("トルクを推定する", type="primary"):
+    col1, col2 = st.columns(2)
+    with col1:
+        mass = st.number_input("Body mass [kg]", min_value=20.0, max_value=150.0, value=82.2, step=0.1)
+    with col2:
+        height = st.number_input("Body height [m]", min_value=1.20, max_value=2.20, value=1.773, step=0.001, format="%.3f")
+
+    with st.expander("Advanced settings"):
+        abc = st.number_input("Part 1 frames", min_value=1, max_value=81, value=52, step=1)
+        fps = st.number_input("Sampling frequency [Hz]", min_value=1.0, max_value=2000.0, value=500.0, step=1.0)
+
+    estimate_clicked = st.button("Estimate torque", type="primary")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with right:
+    st.markdown(
+        """
+        <div class="panel">
+            <div class="panel-title">2. Model information</div>
+            <div class="small-muted">
+                This tool estimates peak elbow varus torque from MA-Q acceleration and gyroscope data.
+                The fixed CB.csv is used internally for global coordinate definition.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        f"""
+        <div class="panel" style="margin-top:1rem;">
+            <div class="panel-title">Fixed calibration file</div>
+            <div class="small-muted">
+                Status: {"Available" if os.path.exists(CB_FIXED_PATH) else "Not found"}<br>
+                Path: <code>{CB_FIXED_PATH}</code>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+if estimate_clicked:
     if maq_csv is None:
         st.error("MA-Q 試技CSVをアップロードしてください。")
     elif not os.path.exists(CB_FIXED_PATH):
         st.error(f"固定CB.csvが見つかりません: {CB_FIXED_PATH}")
     else:
         try:
-            result = estimate_torque_from_uploaded_maq_csv(
-                maq_csv_file=maq_csv,
-                mass=mass,
-                height=height,
-                cb_csv_path=CB_FIXED_PATH,
-                abc=int(abc),
-                fps=float(fps),
+            with st.spinner("Analyzing MA-Q data..."):
+                result = estimate_torque_from_uploaded_maq_csv(
+                    maq_csv_file=maq_csv,
+                    mass=mass,
+                    height=height,
+                    cb_csv_path=CB_FIXED_PATH,
+                    abc=int(abc),
+                    fps=float(fps),
+                )
+
+            torque = result["estimated_peak_torque"]
+
+            st.markdown(
+                f"""
+                <div class="result-card">
+                    <div class="result-label">Estimated peak elbow varus torque</div>
+                    <div class="result-value">{torque:.2f}</div>
+                    <div class="result-unit">N･m</div>
+                </div>
+                """,
+                unsafe_allow_html=True
             )
 
-            st.success("推定が完了しました。")
-            st.metric("推定ピークトルク", f"{result['estimated_peak_torque']:.2f} N･m")
+            st.markdown(
+                f"""
+                <div class="info-row">
+                    <div class="info-box">
+                        <div class="info-k">Release frame</div>
+                        <div class="info-v">{result["release_idx"]}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-k">Used frames</div>
+                        <div class="info-v">{result["used_frames"]}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-k">Frames after release</div>
+                        <div class="info-v">{result["frames_after_release"]}</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-k">Mass / Height</div>
+                        <div class="info-v">{mass:.1f} kg / {height:.3f} m</div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            st.subheader("処理情報")
-            st.write({
-                "release_idx": result["release_idx"],
-                "release_val": result["release_val"],
-                "frames_after_release": result["frames_after_release"],
-                "used_frames": result["used_frames"],
-                "flip_points": result["flip_points"],
-            })
+            with st.expander("Processing details"):
+                st.write({
+                    "release_idx": result["release_idx"],
+                    "release_val": result["release_val"],
+                    "frames_after_release": result["frames_after_release"],
+                    "used_frames": result["used_frames"],
+                    "flip_points": result["flip_points"],
+                })
 
-            with st.expander("作成された特徴量を見る"):
+            with st.expander("Extracted features"):
                 feat_df = pd.DataFrame(
                     [{"feature": k, "value": v} for k, v in result["features"].items()]
                 )
@@ -448,3 +763,12 @@ if st.button("トルクを推定する", type="primary"):
         except Exception as e:
             st.error("推定中にエラーが発生しました。")
             st.exception(e)
+
+st.markdown(
+    """
+    <div class="footer">
+        Developed for biomechanics research. This research tool uses MA-Q sensor data and is not an official Mizuno service.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
