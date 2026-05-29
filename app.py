@@ -734,7 +734,7 @@ if not os.path.exists(CB_FIXED_PATH):
     
 _, center, _ = st.columns([1, 3, 1])
 
-with center_col:
+with center:
 
     st.markdown(
         '<div class="panel"><div class="panel-title">Input data</div>',
