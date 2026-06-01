@@ -63,7 +63,7 @@ def add_global_coords(
     acc_cols=("hiacc_x", "hiacc_y", "hiacc_z"),
     gyro_cols=("gyro_x", "gyro_y", "gyro_z"),
     cb_csv_path: Optional[str] = None,
-    eps: float = 1e-9
+    eps: float = 1e-9,
 ) -> pd.DataFrame:
     for c in (*acc_cols, *gyro_cols):
         if c not in df.columns:
@@ -81,12 +81,11 @@ def add_global_coords(
             "app.py と同じ階層に data フォルダを作り、その中に CB.csv を置いてください。"
         )
 
-    # X軸: 擬似速度の平均方向
     maq_velo = acc_to_velo(
         df[acc_cols[0]].to_numpy(),
         df[acc_cols[1]].to_numpy(),
         df[acc_cols[2]].to_numpy(),
-        fps=fps
+        fps=fps,
     )
 
     maq_velo_mean = maq_velo[110:131, :].mean(axis=0)
@@ -96,7 +95,6 @@ def add_global_coords(
 
     X = maq_velo_mean / np.linalg.norm(maq_velo_mean)
 
-    # 固定CB.csvから重力方向を推定
     df_cb = pd.read_csv(cb_csv_path, encoding="cp932")
 
     if df_cb.shape[0] < 103 or df_cb.shape[1] < 26:
@@ -119,7 +117,6 @@ def add_global_coords(
     gravity_vec = gravity_vec / np.linalg.norm(gravity_vec)
     G = -gravity_vec
 
-    # Y軸 = X × G
     Y = np.cross(X, G)
 
     if np.linalg.norm(Y) < eps:
@@ -130,7 +127,6 @@ def add_global_coords(
 
     Y = Y / np.linalg.norm(Y)
 
-    # Z軸 = X × Y
     Z = np.cross(X, Y)
     Z = Z / np.linalg.norm(Z)
 
@@ -142,7 +138,6 @@ def add_global_coords(
     acc_global = acc_local @ maq_global
     gyro_global = gyro_local @ maq_global
 
-    # 元コードに合わせてジャイロZを反転
     gyro_global[:, 2] *= -1
 
     acc_g_df = pd.DataFrame(acc_global, columns=[f"{c}_g" for c in acc_cols])
@@ -256,10 +251,7 @@ def make_features_from_last82(last82: pd.DataFrame, mass: float, height: float, 
     for i, sub_df in enumerate(splits, start=1):
         axis_cols = [
             c for c in sub_df.columns
-            if (
-                ("hiacc_" in c and "_g" in c)
-                or ("gyro_" in c)
-            )
+            if (("hiacc_" in c and "_g" in c) or ("gyro_" in c))
         ]
 
         for col in axis_cols:
@@ -359,7 +351,6 @@ def load_trials_from_day_csv(uploaded_file) -> Dict[int, pd.DataFrame]:
             continue
 
         if line.startswith("== yy"):
-            # yy0以外のブロックは投球データとして扱う
             in_throw = True
             continue
 
@@ -368,7 +359,6 @@ def load_trials_from_day_csv(uploaded_file) -> Dict[int, pd.DataFrame]:
 
         cols = line.split("\t")
 
-        # 数値データ行以外を除外
         if len(cols) < 6:
             continue
 
@@ -425,7 +415,6 @@ def load_trials_from_day_csv(uploaded_file) -> Dict[int, pd.DataFrame]:
 
         trial_df = trial_df.apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
 
-        # 既存アルゴリズムで最低限必要な長さ
         if len(trial_df) >= 131:
             trial_dfs[trial_no] = trial_df
 
@@ -537,7 +526,7 @@ st.set_page_config(
     page_title="MA-Q Torque Estimator",
     page_icon="⚾",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 # =========================
@@ -554,12 +543,12 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .block-container {
-            max-width: 620px;
+            max-width: 660px;
             padding-top: 12vh;
         }
 
         .login-card {
-            max-width: 620px;
+            max-width: 660px;
             margin: 0 auto;
             padding: 3rem;
             border-radius: 30px;
@@ -585,24 +574,36 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .stTextInput {
-            max-width: 500px;
+            max-width: 520px;
             margin: 1.6rem auto 0 auto;
         }
 
+        .stTextInput > div {
+            min-height: 74px;
+        }
+
+        .stTextInput div[data-baseweb="input"] {
+            min-height: 68px;
+            border-radius: 18px;
+        }
+
         .stTextInput input {
-            min-height: 58px;
-            font-size: 1.35rem;
-            font-weight: 650;
+            min-height: 68px;
+            height: 68px;
+            padding: 0 3.2rem 0 1.2rem;
+            font-size: 1.45rem;
+            font-weight: 700;
             text-align: center;
-            border-radius: 16px;
+            line-height: 68px;
         }
 
         .stTextInput input::placeholder {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
+            line-height: 68px;
         }
         </style>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     st.markdown(
@@ -612,14 +613,14 @@ if "APP_PASSWORD" in st.secrets:
             <p>Password required</p>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     pwd = st.text_input(
         "Password",
         type="password",
         placeholder="Enter password",
-        label_visibility="collapsed"
+        label_visibility="collapsed",
     )
 
     if pwd:
@@ -740,60 +741,24 @@ st.markdown(
         letter-spacing: .06em;
         font-size: 1.45rem;
         font-weight: 850;
-        margin-bottom: 1rem;
+        margin-bottom: 1.1rem;
     }
 
-    .result-value {
-        font-size: clamp(3.2rem, 8vw, 6.4rem);
-        font-weight: 900;
-        letter-spacing: -0.06em;
+    .trial-result {
         color: #ffffff;
-        line-height: 1;
-    }
-
-    .result-unit {
-        color: #dbeafe;
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-top: .45rem;
-    }
-
-    .torque-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-        gap: 1rem;
-        margin-top: 1.8rem;
-    }
-
-    .torque-card {
-        padding: 1.35rem 1rem;
-        border-radius: 22px;
+        font-size: clamp(1.65rem, 3vw, 2.35rem);
+        font-weight: 850;
         text-align: center;
-        background: linear-gradient(145deg, #003B73, #005BAC);
-        border: 1px solid rgba(111,195,255,.38);
-        box-shadow: 0 16px 50px rgba(0,91,172,.24);
+        margin: 0.75rem 0;
+        letter-spacing: .02em;
     }
 
-    .torque-trial {
-        color: #dbeafe;
-        font-size: 1.05rem;
-        font-weight: 800;
-        margin-bottom: .65rem;
-    }
-
-    .torque-value {
-        color: #ffffff;
-        font-size: 3rem;
-        font-weight: 900;
-        line-height: 1;
-        letter-spacing: -0.05em;
-    }
-
-    .torque-unit {
-        color: #dbeafe;
-        font-size: 1.05rem;
+    .trial-error {
+        color: #fecaca;
+        font-size: 1.1rem;
         font-weight: 700;
-        margin-top: .3rem;
+        text-align: center;
+        margin: 0.55rem 0;
     }
 
     div[data-testid="stFileUploader"] {
@@ -832,15 +797,6 @@ st.markdown(
         font-weight: 800 !important;
     }
 
-    .trial-result {
-        color: #ffffff;
-        font-size: 2rem;
-        font-weight: 800;
-        text-align: center;
-        margin: 0.7rem 0;
-        letter-spacing: .03em;
-    }
-
     @media (max-width: 760px) {
         .hero {
             padding: 1.5rem;
@@ -851,7 +807,7 @@ st.markdown(
     }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -866,7 +822,7 @@ st.markdown(
         </p>
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -877,28 +833,47 @@ if not os.path.exists(CB_FIXED_PATH):
     )
 
 
+# =========================
+# Input area
+# =========================
 _, center, _ = st.columns([1, 3, 1])
 
 with center:
     st.markdown(
-        """
-        <div class="result-card">
-            <div class="result-label">
-                Estimated Peak Elbow Varus Torque
-            </div>
-        """,
-        unsafe_allow_html=True
+        '<div class="panel"><div class="panel-title">Player Information</div>',
+        unsafe_allow_html=True,
     )
 
-    for _, row in result_df.iterrows():
-        st.markdown(
-            f"""
-            <div class="trial-result">
-                {int(row["trial"])}球目　{row["torque"]:.2f} N·m
-            </div>
-            """,
-            unsafe_allow_html=True
+    maq_csv = st.file_uploader(
+        "MA-Q 計測日CSV",
+        type=["csv", "txt"],
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        mass = st.number_input(
+            "体重 [kg]",
+            min_value=20.0,
+            max_value=150.0,
+            value=None,
+            step=0.1,
         )
+
+    with col2:
+        height = st.number_input(
+            "身長 [m]",
+            min_value=1.20,
+            max_value=2.20,
+            value=None,
+            step=0.001,
+            format="%.3f",
+        )
+
+    estimate_clicked = st.button(
+        "Estimate torque",
+        type="primary",
+    )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -907,7 +882,6 @@ with center:
 # Result area
 # =========================
 if estimate_clicked:
-
     if maq_csv is None:
         st.error("MA-Q 計測日CSVをアップロードしてください。")
         st.stop()
@@ -922,34 +896,18 @@ if estimate_clicked:
 
     try:
         with st.spinner("Analyzing MA-Q data..."):
-            trials = load_trials_from_day_csv(maq_csv)
-    
-            if not trials:
-                st.error("有効な投球データが見つかりませんでした。")
-                st.stop()
-    
-            results = []
-    
-            for trial_no, trial_df in trials.items():
-                result = estimate_torque_from_trial_df(
-                    trial_df=trial_df,
-                    mass=mass,
-                    height=height,
-                    cb_csv_path=CB_FIXED_PATH,
-                    abc=52,
-                    fps=500.0,
-                )
-    
-                results.append({
-                    "trial": trial_no,
-                    "torque": result["estimated_peak_torque"],
-                })
-    
-            result_df = pd.DataFrame(results)
-    
-        _, center, _ = st.columns([1, 4, 1])
-    
-        with center:
+            result_df = estimate_torques_from_day_csv(
+                uploaded_file=maq_csv,
+                mass=mass,
+                height=height,
+                cb_csv_path=CB_FIXED_PATH,
+                abc=52,
+                fps=500.0,
+            )
+
+        _, result_center, _ = st.columns([1, 4, 1])
+
+        with result_center:
             st.markdown(
                 """
                 <div class="result-card">
@@ -957,21 +915,33 @@ if estimate_clicked:
                         Estimated Peak Elbow Varus Torque
                     </div>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-    
+
             for _, row in result_df.iterrows():
-                st.markdown(
-                    f"""
-                    <div class="trial-result">
-                        {int(row["trial"])}球目　{row["torque"]:.2f} N·m
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-    
+                trial_no = int(row["trial"])
+
+                if row["status"] == "ok" and np.isfinite(row["torque"]):
+                    st.markdown(
+                        f"""
+                        <div class="trial-result">
+                            {trial_no}球目　{row['torque']:.2f} N·m
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown(
+                        f"""
+                        <div class="trial-error">
+                            {trial_no}球目　推定不可
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
             st.markdown("</div>", unsafe_allow_html=True)
-    
+
     except Exception as e:
         st.error("推定中にエラーが発生しました。")
-    st.exception(e)
+        st.exception(e)
