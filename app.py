@@ -547,8 +547,8 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .stTextInput input {
-            min-height: 72px;
-            height: 72px;
+            min-height: 95px;
+            height: 95px;
             font-size: 1.5rem;
             font-weight: 700;
             text-align: center;
