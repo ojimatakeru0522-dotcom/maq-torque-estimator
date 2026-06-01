@@ -805,7 +805,7 @@ with center_col:
 
     with col1:
         mass = st.number_input(
-            "体重 [kg]",
+            "体重 [kg]（例：82.20）",
             min_value=20.0,
             max_value=150.0,
             value=None,
@@ -814,7 +814,7 @@ with center_col:
 
     with col2:
         height = st.number_input(
-            "身長 [m]",
+            "身長 [m]（例：1.773）",
             min_value=1.20,
             max_value=2.20,
             value=None,
