@@ -8,17 +8,12 @@ MA-Q csv + 身長 + 体重だけで肘関節内反ピークトルクを推定す
 - 1つのCSV内に、同一計測日の複数投球が時系列で並んでいる形式
 - 「== yy0 ==============」は静止データとして除外
 - 「== yy1 ==============」など、yy0以外のブロックを各投球データとして推定
+- データ列の取得は、参考コードと同様に「数値行の最後の6列」を使用
 
 重要:
 CB.csv は毎回アップロードしない。
 この app.py と同じ階層に data フォルダを作り、
 その中に固定用の CB.csv を置く。
-
-構成:
-app.py
-requirements.txt
-data/
-└── CB.csv
 """
 
 import os
@@ -63,7 +58,7 @@ def add_global_coords(
     acc_cols=("hiacc_x", "hiacc_y", "hiacc_z"),
     gyro_cols=("gyro_x", "gyro_y", "gyro_z"),
     cb_csv_path: Optional[str] = None,
-    eps: float = 1e-9,
+    eps: float = 1e-9
 ) -> pd.DataFrame:
     for c in (*acc_cols, *gyro_cols):
         if c not in df.columns:
@@ -85,7 +80,7 @@ def add_global_coords(
         df[acc_cols[0]].to_numpy(),
         df[acc_cols[1]].to_numpy(),
         df[acc_cols[2]].to_numpy(),
-        fps=fps,
+        fps=fps
     )
 
     maq_velo_mean = maq_velo[110:131, :].mean(axis=0)
@@ -251,7 +246,10 @@ def make_features_from_last82(last82: pd.DataFrame, mass: float, height: float, 
     for i, sub_df in enumerate(splits, start=1):
         axis_cols = [
             c for c in sub_df.columns
-            if (("hiacc_" in c and "_g" in c) or ("gyro_" in c))
+            if (
+                ("hiacc_" in c and "_g" in c)
+                or ("gyro_" in c)
+            )
         ]
 
         for col in axis_cols:
@@ -306,117 +304,91 @@ def calc_peak_torque_from_features(feat: Dict[str, float]) -> float:
 # =========================================================
 def _decode_uploaded_file(uploaded_file) -> str:
     raw = uploaded_file.getvalue()
-
     for enc in ("utf-8-sig", "utf-8", "cp932", "shift_jis"):
         try:
             return raw.decode(enc)
         except UnicodeDecodeError:
             continue
-
     return raw.decode("utf-8", errors="ignore")
+
+
+def _split_line(line: str) -> List[str]:
+    """タブ区切りを優先し、なければカンマ区切りで読む。"""
+    if "\t" in line:
+        return line.split("\t")
+    return line.split(",")
 
 
 def load_trials_from_day_csv(uploaded_file) -> Dict[int, pd.DataFrame]:
     """
     同一計測日のCSVから投球データだけを抽出する。
 
-    想定:
-    == yy0 ==============  は静止データ
-    == yy1 ==============  など yy0以外は投球データ
-    yy0 が再度出たら、前の投球を確定して次の試技へ進む
+    データの拾い方:
+    - 参考コードと同様に、各数値行の「最後の6列」を使用する。
+    - 最後の6列を hiacc_x, hiacc_y, hiacc_z, gyro_x, gyro_y, gyro_z として扱う。
+    - == yy0 は静止データなので除外する。
+    - == yy0 以外の yy ブロックを1試技として順番に取り出す。
     """
     text = _decode_uploaded_file(uploaded_file)
     lines = text.splitlines()
 
-    header = None
-    current_rows: List[List[str]] = []
-    trials_rows: List[List[List[str]]] = []
+    trial_dfs: Dict[int, pd.DataFrame] = {}
+    current_rows: List[List[float]] = []
     in_throw = False
+    trial_no = 0
+
+    def finalize_current_trial():
+        nonlocal trial_no, current_rows
+        if not current_rows:
+            return
+        df = pd.DataFrame(
+            current_rows,
+            columns=["hiacc_x", "hiacc_y", "hiacc_z", "gyro_x", "gyro_y", "gyro_z"]
+        )
+        df = df.apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
+        if len(df) >= 131:
+            trial_no += 1
+            trial_dfs[trial_no] = df
+        current_rows = []
 
     for raw_line in lines:
-        line = raw_line.rstrip("\n\r")
+        line = raw_line.strip("\n\r")
 
         if not line.strip():
             continue
 
-        if line.startswith("投球年"):
-            header = line.split("\t")
-            continue
-
         if line.startswith("== yy0"):
-            if current_rows:
-                trials_rows.append(current_rows)
-                current_rows = []
+            finalize_current_trial()
             in_throw = False
             continue
 
         if line.startswith("== yy"):
+            finalize_current_trial()
             in_throw = True
             continue
 
         if not in_throw:
             continue
 
-        cols = line.split("\t")
+        cols = _split_line(line)
 
+        # 数値データ行のみ対象
         if len(cols) < 6:
             continue
 
         try:
-            int(float(cols[0]))
+            float(cols[0])
         except ValueError:
             continue
 
-        current_rows.append(cols)
-
-    if current_rows:
-        trials_rows.append(current_rows)
-
-    if header is None:
-        raise ValueError("CSVヘッダー行（投球年...）が見つかりませんでした。")
-
-    required_cols = [
-        "hi_ax[g]",
-        "hi_ay[g]",
-        "hi_az[g]",
-        "gyro_x[dps]",
-        "gyro_y[dps]",
-        "gyro_z[dps]",
-    ]
-
-    missing = [c for c in required_cols if c not in header]
-    if missing:
-        raise ValueError(f"必要な列が見つかりません: {missing}")
-
-    idx = {c: header.index(c) for c in required_cols}
-    max_idx = max(idx.values())
-
-    trial_dfs: Dict[int, pd.DataFrame] = {}
-
-    for trial_no, rows in enumerate(trials_rows, start=1):
-        extracted = []
-
-        for row in rows:
-            if len(row) <= max_idx:
-                continue
-
-            extracted.append({
-                "hiacc_x": row[idx["hi_ax[g]"]],
-                "hiacc_y": row[idx["hi_ay[g]"]],
-                "hiacc_z": row[idx["hi_az[g]"]],
-                "gyro_x": row[idx["gyro_x[dps]"]],
-                "gyro_y": row[idx["gyro_y[dps]"]],
-                "gyro_z": row[idx["gyro_z[dps]"]],
-            })
-
-        trial_df = pd.DataFrame(extracted)
-        if trial_df.empty:
+        values = pd.to_numeric(pd.Series(cols), errors="coerce").dropna().to_list()
+        if len(values) < 6:
             continue
 
-        trial_df = trial_df.apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
+        # 参考コードと同様：最後の6列を使う
+        current_rows.append(values[-6:])
 
-        if len(trial_df) >= 131:
-            trial_dfs[trial_no] = trial_df
+    finalize_current_trial()
 
     return trial_dfs
 
@@ -431,10 +403,6 @@ def estimate_torque_from_trial_df(
 ) -> Dict[str, object]:
     base_columns = ["hiacc_x", "hiacc_y", "hiacc_z", "gyro_x", "gyro_y", "gyro_z"]
     all_columns = base_columns + ["hiacc_x_g", "hiacc_y_g", "hiacc_z_g"]
-
-    missing = [c for c in base_columns if c not in trial_df.columns]
-    if missing:
-        raise ValueError(f"投球データに必要な列がありません: {missing}")
 
     df = trial_df[base_columns].copy()
     df = df.apply(pd.to_numeric, errors="coerce").dropna().reset_index(drop=True)
@@ -526,7 +494,7 @@ st.set_page_config(
     page_title="MA-Q Torque Estimator",
     page_icon="⚾",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="collapsed"
 )
 
 # =========================
@@ -543,12 +511,12 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .block-container {
-            max-width: 660px;
+            max-width: 650px;
             padding-top: 12vh;
         }
 
         .login-card {
-            max-width: 660px;
+            max-width: 650px;
             margin: 0 auto;
             padding: 3rem;
             border-radius: 30px;
@@ -575,35 +543,27 @@ if "APP_PASSWORD" in st.secrets:
 
         .stTextInput {
             max-width: 520px;
-            margin: 1.6rem auto 0 auto;
-        }
-
-        .stTextInput > div {
-            min-height: 74px;
-        }
-
-        .stTextInput div[data-baseweb="input"] {
-            min-height: 68px;
-            border-radius: 18px;
+            margin: 1.8rem auto 0 auto;
         }
 
         .stTextInput input {
             min-height: 68px;
             height: 68px;
-            padding: 0 3.2rem 0 1.2rem;
-            font-size: 1.45rem;
+            font-size: 1.5rem;
             font-weight: 700;
             text-align: center;
+            border-radius: 18px;
             line-height: 68px;
+            padding-top: 0.4rem;
+            padding-bottom: 0.4rem;
         }
 
         .stTextInput input::placeholder {
-            font-size: 1.25rem;
-            line-height: 68px;
+            font-size: 1.3rem;
         }
         </style>
         """,
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
 
     st.markdown(
@@ -613,14 +573,14 @@ if "APP_PASSWORD" in st.secrets:
             <p>Password required</p>
         </div>
         """,
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
 
     pwd = st.text_input(
         "Password",
         type="password",
         placeholder="Enter password",
-        label_visibility="collapsed",
+        label_visibility="collapsed"
     )
 
     if pwd:
@@ -741,24 +701,16 @@ st.markdown(
         letter-spacing: .06em;
         font-size: 1.45rem;
         font-weight: 850;
-        margin-bottom: 1.1rem;
+        margin-bottom: 1rem;
     }
 
     .trial-result {
         color: #ffffff;
-        font-size: clamp(1.65rem, 3vw, 2.35rem);
+        font-size: 2rem;
         font-weight: 850;
         text-align: center;
-        margin: 0.75rem 0;
-        letter-spacing: .02em;
-    }
-
-    .trial-error {
-        color: #fecaca;
-        font-size: 1.1rem;
-        font-weight: 700;
-        text-align: center;
-        margin: 0.55rem 0;
+        margin: 0.85rem 0;
+        letter-spacing: .03em;
     }
 
     div[data-testid="stFileUploader"] {
@@ -804,10 +756,13 @@ st.markdown(
         .result-label {
             font-size: 1.1rem;
         }
+        .trial-result {
+            font-size: 1.55rem;
+        }
     }
     </style>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 
@@ -822,7 +777,7 @@ st.markdown(
         </p>
     </div>
     """,
-    unsafe_allow_html=True,
+    unsafe_allow_html=True
 )
 
 
@@ -833,20 +788,17 @@ if not os.path.exists(CB_FIXED_PATH):
     )
 
 
-# =========================
-# Input area
-# =========================
-_, center, _ = st.columns([1, 3, 1])
+_, center_col, _ = st.columns([1, 3, 1])
 
-with center:
+with center_col:
     st.markdown(
         '<div class="panel"><div class="panel-title">Player Information</div>',
-        unsafe_allow_html=True,
+        unsafe_allow_html=True
     )
 
     maq_csv = st.file_uploader(
         "MA-Q 計測日CSV",
-        type=["csv", "txt"],
+        type=["csv", "txt"]
     )
 
     col1, col2 = st.columns(2)
@@ -857,7 +809,7 @@ with center:
             min_value=20.0,
             max_value=150.0,
             value=None,
-            step=0.1,
+            step=0.1
         )
 
     with col2:
@@ -867,12 +819,12 @@ with center:
             max_value=2.20,
             value=None,
             step=0.001,
-            format="%.3f",
+            format="%.3f"
         )
 
     estimate_clicked = st.button(
         "Estimate torque",
-        type="primary",
+        type="primary"
     )
 
     st.markdown("</div>", unsafe_allow_html=True)
@@ -882,6 +834,7 @@ with center:
 # Result area
 # =========================
 if estimate_clicked:
+
     if maq_csv is None:
         st.error("MA-Q 計測日CSVをアップロードしてください。")
         st.stop()
@@ -905,9 +858,17 @@ if estimate_clicked:
                 fps=500.0,
             )
 
-        _, result_center, _ = st.columns([1, 4, 1])
+        ok_df = result_df[result_df["status"] == "ok"].copy()
 
-        with result_center:
+        if ok_df.empty:
+            st.error("推定できた投球がありませんでした。")
+            with st.expander("エラー詳細"):
+                st.dataframe(result_df, use_container_width=True)
+            st.stop()
+
+        _, result_col, _ = st.columns([1, 4, 1])
+
+        with result_col:
             st.markdown(
                 """
                 <div class="result-card">
@@ -915,32 +876,25 @@ if estimate_clicked:
                         Estimated Peak Elbow Varus Torque
                     </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
-            for _, row in result_df.iterrows():
-                trial_no = int(row["trial"])
-
-                if row["status"] == "ok" and np.isfinite(row["torque"]):
-                    st.markdown(
-                        f"""
-                        <div class="trial-result">
-                            {trial_no}球目　{row['torque']:.2f} N·m
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    st.markdown(
-                        f"""
-                        <div class="trial-error">
-                            {trial_no}球目　推定不可
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+            for _, row in ok_df.iterrows():
+                st.markdown(
+                    f"""
+                    <div class="trial-result">
+                        {int(row["trial"])}球目　{row["torque"]:.2f} N·m
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
             st.markdown("</div>", unsafe_allow_html=True)
+
+        error_df = result_df[result_df["status"] != "ok"]
+        if not error_df.empty:
+            with st.expander("一部の投球は推定できませんでした"):
+                st.dataframe(error_df, use_container_width=True)
 
     except Exception as e:
         st.error("推定中にエラーが発生しました。")
