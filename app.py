@@ -772,7 +772,7 @@ st.markdown(
         <div class="eyebrow">⚾ MA-Q SENSOR DATA ESTIMATOR</div>
         <h1>Elbow Varus Torque<br>Estimation System</h1>
         <p class="sub">
-            MA-Qセンサの同一計測日CSVから複数の投球データを自動で抽出し、
+            MA-Qの投球データから、
             肘関節内反ピークトルクを推定します。
         </p>
     </div>
