@@ -922,65 +922,56 @@ if estimate_clicked:
 
     try:
         with st.spinner("Analyzing MA-Q data..."):
-            result_df = estimate_torques_from_day_csv(
-                uploaded_file=maq_csv,
-                mass=mass,
-                height=height,
-                cb_csv_path=CB_FIXED_PATH,
-                abc=52,
-                fps=500.0,
+            trials = load_trials_from_day_csv(maq_csv)
+    
+            if not trials:
+                st.error("有効な投球データが見つかりませんでした。")
+                st.stop()
+    
+            results = []
+    
+            for trial_no, trial_df in trials.items():
+                result = estimate_torque_from_trial_df(
+                    trial_df=trial_df,
+                    mass=mass,
+                    height=height,
+                    cb_csv_path=CB_FIXED_PATH,
+                    abc=52,
+                    fps=500.0,
+                )
+    
+                results.append({
+                    "trial": trial_no,
+                    "torque": result["estimated_peak_torque"],
+                })
+    
+            result_df = pd.DataFrame(results)
+    
+        _, center, _ = st.columns([1, 4, 1])
+    
+        with center:
+            st.markdown(
+                """
+                <div class="result-card">
+                    <div class="result-label">
+                        Estimated Peak Elbow Varus Torque
+                    </div>
+                """,
+                unsafe_allow_html=True
             )
-
-        ok_df = result_df[result_df["status"] == "ok"].copy()
-
-        if ok_df.empty:
-            st.error("推定できた投球がありませんでした。")
-            st.stop()
-
-        # 1球のみなら大きく表示
-        if len(ok_df) == 1:
-            torque = float(ok_df.iloc[0]["torque"])
-
-            _, result_center, _ = st.columns([1, 4, 1])
-
-            with result_center:
+    
+            for _, row in result_df.iterrows():
                 st.markdown(
                     f"""
-                    <div class="result-card">
-                        <div class="result-label">
-                            Estimated Peak Elbow Varus Torque
-                        </div>
-                        <div class="result-value">
-                            {torque:.2f}
-                        </div>
-                        <div class="result-unit">
-                            N·m
-                        </div>
+                    <div class="trial-result">
+                        {int(row["trial"])}球目　{row["torque"]:.2f} N·m
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-
-        # 複数球なら、各投球のトルクだけをカード表示
-        else:
-            cards_html = '<div class="torque-grid">'
-
-            for _, row in ok_df.iterrows():
-                cards_html += f"""
-                <div class="torque-card">
-                    <div class="torque-trial">{int(row["trial"])}球目</div>
-                    <div class="torque-value">{float(row["torque"]):.2f}</div>
-                    <div class="torque-unit">N·m</div>
-                </div>
-                """
-
-            cards_html += "</div>"
-
-            _, result_center, _ = st.columns([1, 5, 1])
-
-            with result_center:
-                st.markdown(cards_html, unsafe_allow_html=True)
-
+    
+            st.markdown("</div>", unsafe_allow_html=True)
+    
     except Exception as e:
         st.error("推定中にエラーが発生しました。")
-        st.exception(e)
+    st.exception(e)
