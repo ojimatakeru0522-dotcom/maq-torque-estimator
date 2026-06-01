@@ -528,8 +528,8 @@ if "APP_PASSWORD" in st.secrets:
 
         .login-card h1 {
             color: #f8fafc;
-            font-size: 3.8rem;
-            font-weight: 850;
+            font-size: 3.5rem;
+            font-weight: 800;
             line-height: 1.0;
             margin-bottom: 1rem;
         }
@@ -547,8 +547,8 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .stTextInput input {
-            min-height: 68px;
-            height: 68px;
+            min-height: 72px;
+            height: 72px;
             font-size: 1.5rem;
             font-weight: 700;
             text-align: center;
