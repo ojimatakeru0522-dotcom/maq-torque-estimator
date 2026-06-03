@@ -500,88 +500,95 @@ st.set_page_config(
 # =========================
 # Optional password auth
 # =========================
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
 if "APP_PASSWORD" in st.secrets:
-    st.markdown(
-        """
-        <style>
-        .stApp {
-            background:
-                radial-gradient(circle at 50% 20%, rgba(0,91,172,.22), transparent 30%),
-                linear-gradient(135deg, #03111F 0%, #082B4C 55%, #061A2F 100%);
-        }
 
-        .block-container {
-            max-width: 650px;
-            padding-top: 12vh;
-        }
+    if not st.session_state.authenticated:
 
-        .login-card {
-            max-width: 650px;
-            margin: 0 auto;
-            padding: 3rem;
-            border-radius: 30px;
-            background: linear-gradient(145deg, rgba(15,23,42,.96), rgba(2,6,23,.96));
-            border: 1px solid rgba(148,163,184,.25);
-            box-shadow: 0 24px 70px rgba(0,0,0,.35);
-            text-align: center;
-        }
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background:
+                    radial-gradient(circle at 50% 20%, rgba(0,91,172,.22), transparent 30%),
+                    linear-gradient(135deg, #03111F 0%, #082B4C 55%, #061A2F 100%);
+            }
 
-        .login-card h1 {
-            color: #f8fafc;
-            font-size: 3.5rem;
-            font-weight: 800;
-            line-height: 1.0;
-            margin-bottom: 1rem;
-        }
+            .block-container {
+                max-width: 650px;
+                padding-top: 12vh;
+            }
 
-        .login-card p {
-            color: #9db5d1;
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 1.8rem;
-        }
+            .login-card {
+                max-width: 650px;
+                margin: 0 auto;
+                padding: 3rem;
+                border-radius: 30px;
+                background: linear-gradient(145deg, rgba(15,23,42,.96), rgba(2,6,23,.96));
+                border: 1px solid rgba(148,163,184,.25);
+                box-shadow: 0 24px 70px rgba(0,0,0,.35);
+                text-align: center;
+            }
 
-        .stTextInput {
-            max-width: 520px;
-            margin: 1.8rem auto 0 auto;
-        }
+            .login-card h1 {
+                color: #f8fafc;
+                font-size: 3.5rem;
+                font-weight: 800;
+                line-height: 1.0;
+                margin-bottom: 1rem;
+            }
 
-        .stTextInput input {
-            font-size: 1.3rem;
-            text-align: center;
-            border-radius: 18px;
-        }
+            .login-card p {
+                color: #9db5d1;
+                font-size: 1.25rem;
+                font-weight: 700;
+                margin-bottom: 1.8rem;
+            }
 
-        .stTextInput input::placeholder {
-            font-size: 1.3rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+            .stTextInput {
+                max-width: 520px;
+                margin: 1.8rem auto 0 auto;
+            }
 
-    st.markdown(
-        """
-        <div class="login-card">
-            <h1>MA-Q Torque<br>Estimator</h1>
-            <p>Password required</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            .stTextInput input {
+                height: 60px;
+                min-height: 60px;
+                font-size: 1.3rem;
+                font-weight: 700;
+                text-align: center;
+                border-radius: 18px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
-    pwd = st.text_input(
-        "Password",
-        type="password",
-        placeholder="Enter password",
-        label_visibility="collapsed"
-    )
+        st.markdown(
+            """
+            <div class="login-card">
+                <h1>MA-Q Torque<br>Estimator</h1>
+                <p>Password required</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-    if pwd:
-        if pwd != st.secrets["APP_PASSWORD"]:
-            st.error("Incorrect password")
-            st.stop()
-    else:
+        pwd = st.text_input(
+            "Password",
+            type="password",
+            placeholder="Enter password",
+            label_visibility="collapsed"
+        )
+
+        if pwd:
+            if pwd == st.secrets["APP_PASSWORD"]:
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+
         st.stop()
 
 
