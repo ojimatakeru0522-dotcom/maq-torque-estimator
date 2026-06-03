@@ -557,9 +557,10 @@ if "APP_PASSWORD" in st.secrets:
                 min-height: 60px;
                 font-size: 1.3rem;
                 font-weight: 700;
-                text-align: center;
                 border-radius: 18px;
+                padding-left: 20px;
             }
+
             </style>
             """,
             unsafe_allow_html=True
