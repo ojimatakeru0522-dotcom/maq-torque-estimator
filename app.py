@@ -559,6 +559,8 @@ if "APP_PASSWORD" in st.secrets:
                 font-weight: 600;
                 text-align: center;
                 border-radius: 18px;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
             }
             
             </style>
