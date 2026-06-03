@@ -547,15 +547,9 @@ if "APP_PASSWORD" in st.secrets:
         }
 
         .stTextInput input {
-            min-height: 95px;
-            height: 95px;
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.3rem;
             text-align: center;
             border-radius: 18px;
-            line-height: 68px;
-            padding-top: 0.4rem;
-            padding-bottom: 0.4rem;
         }
 
         .stTextInput input::placeholder {
