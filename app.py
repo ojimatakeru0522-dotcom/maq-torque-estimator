@@ -553,14 +553,14 @@ if "APP_PASSWORD" in st.secrets:
             }
 
             .stTextInput input {
-                height: 60px;
-                min-height: 60px;
-                font-size: 1.3rem;
-                font-weight: 700;
+                height: 56px;
+                min-height: 56px;
+                font-size: 1.1rem;
+                font-weight: 600;
+                text-align: center;
                 border-radius: 18px;
-                padding-left: 20px;
             }
-
+            
             </style>
             """,
             unsafe_allow_html=True
